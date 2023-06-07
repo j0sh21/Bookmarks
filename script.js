@@ -363,15 +363,16 @@ function saveView() {
     y: parseInt(box.style.top, 10),
     width: parseInt(box.style.width, 10),
     height: parseInt(box.style.height, 10),
-    url: box.dataset.url,
+    url: encodeURIComponent(box.dataset.url),
     imgUrl: box.dataset.imgurl,
     bgColor: box.style.backgroundColor,
     opacity: box.style.opacity
   }));
-  const backgroundUrl = localStorage.getItem('background'); // Extrahiere die Hintergrundbild-URL aus dem Stilattribut
-  const userId = getCookie("userid").toString(); // Hier musst du die tatsächliche Benutzer-ID des eingeloggten Benutzers verwenden
-  const viewData = JSON.stringify(boxData);
+  const backgroundUrl = localStorage.getItem('background');
+  const userId = getCookie("userid").toString();
+
   localStorage.setItem('boxData', JSON.stringify(boxData));
+
   // Sende die Ansichtsdaten an den Server
   const xhr = new XMLHttpRequest();
   xhr.open('POST', 'include/save_view.php', true);
@@ -385,12 +386,14 @@ function saveView() {
       }
     }
   };
-   xhr.send(`userId=${userId}&viewData=${viewData}&backgroundUrl=${encodeURIComponent(backgroundUrl)}`);
 
+  let viewData = JSON.stringify(boxData);
+  xhr.send(`userId=${userId}&viewData=${encodeURIComponent(viewData)}&backgroundUrl=${encodeURIComponent(backgroundUrl)}`);
 }
 
+
 function loadView() {
-  const boxData = JSON.parse(localStorage.getItem('boxData'));
+  //const boxData = JSON.parse(localStorage.getItem('boxData'));
   const userId = getCookie("userid").toString(); // Hier musst du die tatsächliche Benutzer-ID des eingeloggten Benutzers verwenden
 
   if (userId !== "") {
@@ -401,11 +404,23 @@ function loadView() {
     xhr.onreadystatechange = function() {
       if (xhr.readyState === XMLHttpRequest.DONE) {
         if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
+          console.log(xhr.responseText);
+          let response;
+           try {
+                response = JSON.parse(xhr.responseText);
+           } catch(e) {
+                console.error('Error parsing server response:', e);
+                return;
+           }
           if (response.viewData) {
-            const boxData = JSON.parse(response.viewData);
+            let boxData = JSON.parse(response.viewData);
+            boxData = boxData.map(box => ({
+                ...box,
+                url: decodeURIComponent(box.url)
+            }));
             createSavedBoxes(boxData);
-          } else {
+          }
+ else {
             console.log('Keine gespeicherte Ansicht gefunden.');
           }
           if (response.backgroundUrl) {

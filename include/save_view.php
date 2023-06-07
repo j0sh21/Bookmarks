@@ -1,43 +1,43 @@
 <?php
-// Stelle eine Verbindung zur Datenbank her
+// Establish a connection to the database
 $servername = "localhost";
-$username = "";
-$password = "";
+$username = "python";
+$password = "12345";
 $dbname = "test";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
-    die("Verbindung zur Datenbank fehlgeschlagen: " . $conn->connect_error);
+    die("Connection to the database failed: " . $conn->connect_error);
 }
 
-// Empfange die Benutzer-ID aus dem JavaScript-Code
+// Receive the user ID from the JavaScript code
 $userId = $_POST['userId'];
+$viewData = urldecode($_POST['viewData']);
+$backgroundUrl = urldecode($_POST['backgroundUrl']);
 
-// Überprüfe, ob die Ansicht bereits in der Datenbank existiert
-$sql = "SELECT * FROM views WHERE user_id = '$userId'";
-$result = $conn->query($sql);
+// Check whether the view already exists in the database
+$stmt = $conn->prepare("SELECT * FROM views WHERE user_id = ?");
+$stmt->bind_param("s", $userId);
+$stmt->execute();
+$result = $stmt->get_result();
 
 if ($result->num_rows > 0) {
-    // Die Ansicht existiert bereits, aktualisiere sie
-    $viewData = $_POST['viewData'];
-    $backgroundUrl = $_POST['backgroundUrl'];
-
-    $sql = "UPDATE views SET view_data = '$viewData', backgroundUrl = '$backgroundUrl' WHERE user_id = '$userId'";
-    if ($conn->query($sql) === TRUE) {
-        echo "Ansicht erfolgreich aktualisiert.";
+    // The view already exists, update it
+    $stmt = $conn->prepare("UPDATE views SET view_data = ?, backgroundUrl = ? WHERE user_id = ?");
+    $stmt->bind_param("sss", $viewData, $backgroundUrl, $userId);
+    if ($stmt->execute()) {
+        echo "View updated successfully.";
     } else {
-        echo "Fehler beim Aktualisieren der Ansicht: " . $conn->error;
+        echo "Error updating the view: " . $stmt->error;
     }
 } else {
-    // Die Ansicht existiert noch nicht, speichere sie als neue Ansicht
-    $viewData = $_POST['viewData'];
-    $backgroundUrl = $_POST['backgroundUrl'];
-
-    $sql = "INSERT INTO views (user_id, view_data, backgroundUrl) VALUES ('$userId', '$viewData', '$backgroundUrl')";
-    if ($conn->query($sql) === TRUE) {
-        echo "Ansicht erfolgreich gespeichert.";
+    // The view does not yet exist, save it as a new view
+    $stmt = $conn->prepare("INSERT INTO views (user_id, view_data, backgroundUrl) VALUES (?, ?, ?)");
+    $stmt->bind_param("sss", $userId, $viewData, $backgroundUrl);
+    if ($stmt->execute()) {
+        echo "View saved successfully.";
     } else {
-        echo "Fehler beim Speichern der Ansicht: " . $conn->error;
+        echo "Error saving the view: " . $stmt->error;
     }
 }
 

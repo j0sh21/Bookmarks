@@ -1,27 +1,33 @@
 <?php
-// Stelle eine Verbindung zur Datenbank her
+// Establish a connection to the database
 $servername = "localhost";
-$username = "";
-$password = "";
+$username = "python";
+$password = "12345";
 $dbname = "test";
 
 $conn = new mysqli($servername, $username, $password, $dbname);
 if ($conn->connect_error) {
-    die("Verbindung zur Datenbank fehlgeschlagen: " . $conn->connect_error);
+    die("Connection to the database failed: " . $conn->connect_error);
 }
 
-// Empfange die Benutzer-ID aus dem JavaScript-Code
+// Receive the user ID from the JavaScript code
 $userId = $_POST['userId'];
 
-// Überprüfe, ob die Ansicht bereits in der Datenbank existiert
+// Check whether the view already exists in the database
 $sql = "SELECT * FROM views WHERE user_id = '$userId'";
 $result = $conn->query($sql);
 
 if ($result->num_rows > 0) {
-    // Die Ansicht existiert bereits, gib die Daten zurück
+    // The view already exists, return the data
     $row = $result->fetch_assoc();
-    $viewData = $row['view_data'];
-    $backgroundUrl = $row['backgroundUrl'];
+    foreach ($viewData as &$item) {
+        $item['url'] = urldecode($item['url']);
+    }
+    $viewData = json_decode($row['view_data'], true);
+    $backgroundUrl = urldecode($row['backgroundUrl']);
+
+    // Decode URLs in viewData
+
 
     $response = array(
         'viewData' => $viewData,
@@ -30,7 +36,7 @@ if ($result->num_rows > 0) {
 
     echo json_encode($response);
 } else {
-    // Die Ansicht existiert noch nicht, gib leere Daten zurück
+    // The view does not yet exist, return empty data
     $response = array(
         'viewData' => null,
         'backgroundUrl' => null
